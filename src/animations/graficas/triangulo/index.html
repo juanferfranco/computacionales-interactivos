@@ -72,7 +72,7 @@ footer{max-width:1200px;margin:12px auto 30px;padding:0 20px;color:var(--mu);fon
 <span class="tag" id="tag"></span>
 <p id="lesson" class="lesson"></p><h2 id="tt"></h2><div id="ex"></div>
 <pre id="cd"></pre><div class="k" id="kk"></div>
-<div class="ctl"><button id="pv">← Anterior</button><button id="nx" class="p">Siguiente →</button><button id="pl">▶ Auto</button><span id="ct"></span></div>
+<div class="ctl"><button id="pv">← Anterior</button><button id="nx" class="p">Siguiente →</button><span id="ct"></span></div>
 </section></main>
 <footer>
 <details><summary>Material de clase y fuentes técnicas</summary>
@@ -939,7 +939,7 @@ const PS=['Vertex shader','Geometría','Rasterización','Fragment shader','Frame
 const PD=['Posición en espacio de clip','Recorte → NDC → viewport','Fragmentos y cobertura','Color de los fragmentos','Escribe el color','Muestra el cuadro'];
 const BD={'-1':'no existe',0:'contenido indefinido',1:'color de fondo',5:'fondo + triángulo rasterizado',7:'contenido no garantizado después del intercambio'};
 const SD={'-1':'sin ventana',0:'apariencia inicial no definida por este programa',5:'cuadro presentado (modelo didáctico)'};
-let i=0,prev=null,timer=null,dots=[];
+let i=0,prev=null,dots=[];
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 const nav=$('nav');let lastG='';
 S.forEach((s,n)=>{if(s.g!==lastG){const g=document.createElement('span');g.className='grp';g.textContent=s.g;nav.appendChild(g);lastG=s.g}
@@ -959,7 +959,7 @@ if(v===6){tri(1)}}
 function render(){const s=S[i];$('tag').textContent=s.g+' · paso '+(i+1)+' de '+S.length;$('tt').textContent=s.t;
 $('ex').innerHTML=`<p>${s.ex}</p>`;$('cd').textContent=s.code;
 $('kk').innerHTML=s.k.map(([a,b])=>`<div><b>${a}:</b> ${b}</div>`).join('');
-$('ct').textContent='Teclas ← →';$('lesson').textContent='Unidad 7 · Actividad '+s.activity;
+$('ct').textContent=`${i+1} / ${S.length}`;$('lesson').textContent='Unidad 7 · Actividad '+s.activity;
 [...nav.querySelectorAll('.d')].forEach((b,n)=>{b.classList.toggle('on',n===i);b.classList.toggle('done',n<i);b.setAttribute('aria-current',n===i?'step':'false')});
 let h='';for(const k in BX){const[x,y,w,ht,l,sb,c]=BX[k],a=s.act.includes(k),items=k==='ram'?s.ram:k==='vram'?s.vram:[],po=prev?(k==='ram'?prev.ram:prev.vram):[];
 h+=`<rect class="box${a?' act':''}" x="${x}" y="${y}" width="${w}" height="${ht}" rx="8" style="stroke:${a?`var(${c})`:''}"/><text class="lbl" x="${x+10}" y="${y+22}">${l}</text><text class="sub" x="${x+10}" y="${y+37}">${sb}</text>`;
@@ -984,7 +984,6 @@ const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
 function tick(t){const s=S[i];if(s.flow){const f=FL[s.flow];dots.forEach((c,k)=>{const u=RM ? .5 :((t/1400+k/4)%1);c.setAttribute('cx',f[0]+(f[2]-f[0])*u);c.setAttribute('cy',f[1]+(f[3]-f[1])*u)})}requestAnimationFrame(tick)}
 function go(n){i=Math.max(0,Math.min(S.length-1,n));render()}
 $('nx').onclick=()=>go(i+1);$('pv').onclick=()=>go(i-1);
-$('pl').onclick=()=>{if(timer){clearInterval(timer);timer=null;$('pl').textContent='▶ Auto'}else{$('pl').textContent='❚❚ Pausa';timer=setInterval(()=>{if(i>=S.length-1){clearInterval(timer);timer=null;$('pl').textContent='▶ Auto'}else go(i+1)},6500)}};
 addEventListener('keydown',e=>{if(e.key==='ArrowRight'){e.preventDefault();go(i+1)}if(e.key==='ArrowLeft'){e.preventDefault();go(i-1)}});
 render();requestAnimationFrame(tick);
 </script></body></html>
