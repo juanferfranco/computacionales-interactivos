@@ -1,0 +1,84 @@
+{
+  "topics": [
+    {
+      "id": "graficas",
+      "title": "Computación gráfica",
+      "description": "Del código y los datos de vértice a la imagen en pantalla."
+    },
+    {
+      "id": "concurrencia",
+      "title": "Concurrencia",
+      "description": "Procesos, hilos y coordinación del trabajo."
+    }
+  ],
+  "animations": [
+    {
+      "id": "triangulo",
+      "topic": "graficas",
+      "title": "Cómo OpenGL dibuja un triángulo",
+      "description": "Sigue la preparación del contexto, los buffers, los shaders y el recorrido hasta la pantalla.",
+      "source": "src/animations/graficas/triangulo/index.html",
+      "units": [
+        7
+      ],
+      "published": true,
+      "concepts": [
+        "Contexto",
+        "Pipeline",
+        "Shaders",
+        "Framebuffer"
+      ]
+    },
+    {
+      "id": "datos-vbo-vao",
+      "topic": "graficas",
+      "title": "De los datos al dibujo: VBO y VAO",
+      "description": "Descubre cómo posición, color y desplazamiento se almacenan como bytes y llegan al vertex shader.",
+      "source": "src/animations/graficas/datos-vbo-vao/index.html",
+      "units": [
+        7
+      ],
+      "published": true,
+      "concepts": [
+        "Vértices",
+        "Atributos",
+        "Stride",
+        "Offset"
+      ]
+    },
+    {
+      "id": "movimiento-y-color",
+      "topic": "graficas",
+      "title": "Cómo OpenGL mueve y colorea un triángulo",
+      "description": "Relaciona la posición del mouse con los uniforms de desplazamiento y color en cada cuadro.",
+      "source": "src/animations/graficas/movimiento-y-color/index.html",
+      "units": [
+        7
+      ],
+      "published": true,
+      "concepts": [
+        "Mouse",
+        "Uniforms",
+        "Coordenadas",
+        "Cuadros"
+      ]
+    },
+    {
+      "id": "cpu-ram-gpu-vram",
+      "topic": "graficas",
+      "title": "Del mouse al framebuffer",
+      "description": "Distingue los programas, los datos y las órdenes que relacionan CPU, RAM, GPU y VRAM.",
+      "source": "src/animations/graficas/cpu-ram-gpu-vram/index.html",
+      "units": [
+        7
+      ],
+      "published": true,
+      "concepts": [
+        "CPU",
+        "RAM",
+        "GPU",
+        "VRAM"
+      ]
+    }
+  ]
+}

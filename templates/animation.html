@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{TITLE}}</title>
+<style>body{margin:0;background:var(--bg,#0f1b26);color:var(--text,#e6eef5);font:16px/1.5 system-ui}main{max-width:1100px;margin:auto;padding:24px}button{font:inherit;padding:8px 12px}#visual{min-height:220px;border:1px solid var(--line,#345069);padding:20px;margin:20px 0}</style>
+</head><body><main><h1>{{TITLE}}</h1><p>TODO_ANIMATION: completa la explicación visual antes de publicar.</p><div id="visual" role="img" aria-label="Esquema del concepto por completar"></div><h2 id="heading"></h2><p id="explanation" aria-live="polite"></p><button id="previous">Anterior</button> <button id="next">Siguiente</button></main>
+<script>
+const steps=[{title:'TODO_ANIMATION: primer paso',explanation:'Describe qué dato o proceso se observa.',visual:'Añade el esquema del primer paso.'},{title:'TODO_ANIMATION: segundo paso',explanation:'Describe qué cambió y por qué.',visual:'Añade el esquema del segundo paso.'}];
+let current=0;
+function render(){document.getElementById('heading').textContent=steps[current].title;document.getElementById('explanation').textContent=steps[current].explanation;document.getElementById('visual').textContent=steps[current].visual;document.getElementById('previous').disabled=current===0;document.getElementById('next').disabled=current===steps.length-1;}
+document.getElementById('previous').onclick=()=>{current=Math.max(0,current-1);render();};document.getElementById('next').onclick=()=>{current=Math.min(steps.length-1,current+1);render();};render();
+</script></body></html>

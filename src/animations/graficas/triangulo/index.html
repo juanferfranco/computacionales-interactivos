@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cómo OpenGL dibuja un triángulo</title>
+
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#0f1b26;--pn:#16283a;--ln:#2c4560;--tx:#e6eef5;--mu:#93a9bc;--or:#ff8033;--cpu:#6aa7ff;--gpu:#2fd1b5;--vr:#c58bff}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#eef3f7;--pn:#fff;--ln:#b9cad8;--tx:#13212e;--mu:#506478;--or:#e2600f;--cpu:#2563c9;--gpu:#0b8f7b;--vr:#7d3fc4}}
+:root[data-theme="light"]{--bg:#eef3f7;--pn:#fff;--ln:#b9cad8;--tx:#13212e;--mu:#506478;--or:#e2600f;--cpu:#2563c9;--gpu:#0b8f7b;--vr:#7d3fc4}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 'Bricolage Grotesque',system-ui,sans-serif}
+header{padding:18px 20px 6px;max-width:1200px;margin:auto}
+h1{font-size:clamp(1.5rem,3.5vw,2.3rem);margin:0;font-weight:800;letter-spacing:-.02em}
+header p{margin:4px 0 0;color:var(--mu);max-width:70ch}
+#nav{max-width:1200px;margin:10px auto 0;padding:0 20px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+#nav .grp{font-size:.8rem;color:var(--mu);margin:0 6px 0 10px}
+#nav button.d{width:26px;height:26px;border-radius:50%;border:1px solid var(--ln);background:var(--pn);color:var(--mu);font:600 .75rem 'JetBrains Mono',monospace;cursor:pointer}
+#nav button.d.on{background:var(--or);color:#111;border-color:var(--or)}
+#nav button.d.done{border-color:var(--or);color:var(--tx)}
+main{max-width:1200px;margin:12px auto;padding:0 20px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.card{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:14px}
+svg text{font-family:'Bricolage Grotesque',system-ui,sans-serif}
+.box{fill:var(--bg);stroke:var(--ln);stroke-width:2;transition:.3s}
+.box.act{stroke-width:3}
+.lbl{fill:var(--tx);font-weight:600;font-size:15px}.sub{fill:var(--mu);font-size:11px}
+.chip{font:12px 'JetBrains Mono',monospace;fill:var(--tx)}
+.chip.new{fill:var(--or);font-weight:700}
+#pipe{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0;align-items:stretch}
+#pipe div{flex:1 1 90px;border:1px solid var(--ln);border-radius:8px;padding:6px 8px;font-size:.78rem;color:var(--mu);transition:.25s;background:var(--bg)}
+#pipe div b{display:block;color:var(--tx);font-size:.82rem}
+#pipe div.on{border-color:var(--or);box-shadow:0 0 0 2px var(--or) inset;color:var(--tx)}
+#pipe div.prog b::after{content:' ▸ programable';color:var(--gpu);font-weight:400;font-size:.7rem}
+.row{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-top:12px}
+figure{margin:0;width:170px}canvas{display:block;border:2px solid var(--ln);border-radius:6px;background:#000;width:170px;height:170px}canvas.tmp{border:2px dashed var(--or)}#cv2{border:5px solid #556;border-radius:8px}figcaption{font-size:.76rem;color:var(--mu);margin-top:5px;line-height:1.3}figcaption b{color:var(--tx)}
+.how{flex:1;min-width:200px;font-size:.88rem;color:var(--mu)}
+.how b{color:var(--tx)}
+.tag{display:inline-block;font-size:.75rem;border-radius:99px;padding:1px 10px;border:1px solid var(--ln);color:var(--mu)}
+h2{font-size:1.25rem;margin:6px 0 4px;line-height:1.25}
+pre{margin:10px 0;padding:10px 12px;background:var(--bg);border:1px solid var(--ln);border-radius:8px;font:12.5px/1.55 'JetBrains Mono',monospace;overflow-x:auto;color:var(--tx)}
+.txt p{margin:6px 0}
+.k{display:grid;gap:6px;margin-top:10px}
+.k div{border-left:3px solid var(--gpu);padding:2px 10px;font-size:.88rem;background:var(--bg);border-radius:0 6px 6px 0}
+.k b{color:var(--gpu)}
+.ctl{display:flex;gap:8px;margin-top:12px;align-items:center}
+.ctl button{font:600 .9rem 'Bricolage Grotesque',sans-serif;padding:8px 14px;border-radius:8px;border:1px solid var(--ln);background:var(--pn);color:var(--tx);cursor:pointer}
+.ctl button.p{background:var(--or);color:#111;border-color:var(--or)}
+button:focus-visible{outline:3px solid var(--cpu);outline-offset:2px}
+.ctl span{margin-left:auto;color:var(--mu);font-size:.8rem}
+footer{max-width:1200px;margin:12px auto 30px;padding:0 20px;color:var(--mu);font-size:.9rem}details{padding:10px 0}summary{cursor:pointer;color:var(--tx)}a{color:var(--cpu)}.scope{font-size:.86rem}.ctl{flex-wrap:wrap}button:disabled{opacity:.45;cursor:default}
+.lesson{margin:5px 0;color:var(--mu);font-size:.82rem}
+</style></head><body>
+<header><h1>Cómo OpenGL dibuja un triángulo</h1>
+<p>Del código C++ a la pantalla: sigue el caso de estudio del triángulo paso a paso.</p><p class="scope">Caso: OpenGL 4.6 Core · GLAD 1 · framebuffer de ejemplo 400×400. Cada cuadro (frame) se construye en el ciclo principal (game loop). La arquitectura, la rejilla 20×20 y las pausas entre etapas son esquemas didácticos; no representan tiempos ni distribución física exactos.</p></header>
+<div id="nav" role="group" aria-label="Pasos"></div>
+<main>
+<section class="card" aria-label="Hardware">
+<svg id="hw" viewBox="0 0 720 330" width="100%" role="img" aria-label="CPU y controlador, memoria del programa, GPU y memoria gráfica: modelo lógico">
+<g id="boxes"></g>
+<text x="360" y="132" text-anchor="middle" class="sub">Transferencia lógica</text>
+<text x="360" y="146" text-anchor="middle" class="sub">PCIe en GPU dedicada</text>
+<line x1="235" y1="70" x2="485" y2="70" stroke="var(--ln)" stroke-dasharray="4 4"/>
+<line x1="235" y1="225" x2="485" y2="225" stroke="var(--ln)" stroke-dasharray="4 4"/>
+<g id="pk"></g></svg>
+<div id="pipe"></div>
+<div class="row"><figure><canvas id="cv" width="220" height="220" aria-label="Buffer trasero"></canvas><figcaption id="c1"></figcaption></figure><figure><canvas id="cv2" width="220" height="220" aria-label="Pantalla"></canvas><figcaption id="c2"></figcaption></figure>
+<div class="how" id="how"></div></div>
+</section>
+<section class="card txt" aria-live="polite">
+<span class="tag" id="tag"></span>
+<p id="lesson" class="lesson"></p><h2 id="tt"></h2><div id="ex"></div>
+<pre id="cd"></pre><div class="k" id="kk"></div>
+<div class="ctl"><button id="pv">← Anterior</button><button id="nx" class="p">Siguiente →</button><button id="pl">▶ Auto</button><span id="ct"></span></div>
+</section></main>
+<footer>
+<details><summary>Material de clase y fuentes técnicas</summary>
+<p>Explicaciones adaptadas del caso de estudio de la unidad 7, actividades 02, 03 y 04 · versión 2026-20.</p>
+<ul>
+<li><a href="https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf">OpenGL 4.6 Core</a>: §§ 2.1–2.3, 5.1, 6.1–6.2, 9, 10.3, 13.6–13.8, 14, 15 y 17.</li>
+<li><a href="https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html">GLSL 4.60</a>: gl_Position, interfaces y calificadores de entrada/salida.</li>
+<li><a href="https://wikis.khronos.org/opengl/Vertex_Post-Processing">Khronos: posprocesamiento de vértices</a> y <a href="https://wikis.khronos.org/opengl/Vertex_Specification">especificación de atributos</a>.</li>
+<li><a href="https://www.glfw.org/docs/latest/context_guide.html">GLFW: contextos y carga de funciones</a>.</li>
+<li><a href="https://www.glfw.org/docs/latest/window_guide.html#buffer_swap">GLFW: framebuffer, doble buffer e intervalo de intercambio</a>.</li>
+</ul>
+</details>
+</footer>
+<script>
+const S=[
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Inicializar GLFW",
+    "code": "if (!glfwInit()) return -1;",
+    "ex": "Tu programa C++ comienza en la <b>CPU</b>. Lo primero que hace es inicializar <b>GLFW</b>, la biblioteca que usaremos para crear la ventana y manejar eventos, como el teclado, el mouse y los cambios de tamaño. <b>OpenGL</b> es la API con la que damos instrucciones gráficas; el <b>driver</b> de la tarjeta gráfica las implementa y la <b>GPU</b> realiza el trabajo gráfico. Si GLFW no se inicializa, el programa termina.",
+    "k": [
+      [
+        "GLFW",
+        "Biblioteca para crear ventanas, gestionar contextos OpenGL y manejar eventos."
+      ],
+      [
+        "CPU / GPU",
+        "La CPU ejecuta el C++; la GPU procesa los datos gráficos y ejecuta los shaders."
+      ],
+      [
+        "Driver",
+        "Software que implementa las funciones de OpenGL para la tarjeta gráfica."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram"
+    ],
+    "flow": "c2r",
+    "ram": [
+      "Programa C++ / driver"
+    ],
+    "vram": [],
+    "stage": -1,
+    "visual": [
+      -1,
+      -1,
+      0
+    ],
+    "activity": "03"
+  },
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Configurar la versión y el perfil de OpenGL",
+    "code": "glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);\nglfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);\nglfwWindowHint(GLFW_OPENGL_PROFILE,\n               GLFW_OPENGL_CORE_PROFILE);",
+    "ex": "Estas líneas indican qué <b>contexto OpenGL</b> queremos crear: versión <b>4.6</b> y perfil <b>Core</b>. Como en la actividad 03, usamos OpenGL moderno: programamos shaders en lugar de funciones antiguas como <code>glBegin</code> y <code>glEnd</code>. El perfil Core conserva otras etapas del pipeline, como la rasterización. Aquí todavía no se crea la ventana; si el equipo no admite el contexto solicitado, su creación fallará.",
+    "k": [
+      [
+        "Contexto OpenGL",
+        "Entorno de ejecución donde OpenGL guarda el estado gráfico."
+      ],
+      [
+        "Core / Legacy",
+        "Core excluye funciones heredadas; el ejemplo usa shaders para las etapas programables."
+      ]
+    ],
+    "act": [
+      "cpu"
+    ],
+    "flow": null,
+    "ram": [
+      "Programa C++ / driver",
+      "Solicitud: 4.6 Core"
+    ],
+    "vram": [],
+    "stage": -1,
+    "visual": [
+      -1,
+      -1,
+      0
+    ],
+    "activity": "03"
+  },
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Crear la ventana y su contexto OpenGL",
+    "code": "GLFWwindow* mainWindow = glfwCreateWindow(\n    400, 400, \"Ventana\", nullptr, nullptr);\n// Comprobar mainWindow != nullptr\nglfwGetFramebufferSize(mainWindow,\n    &bufferWidth, &bufferHeight);\nglfwSetFramebufferSizeCallback(mainWindow,\n    framebuffer_size_callback);",
+    "ex": "GLFW crea la ventana y su <b>contexto OpenGL</b>. Piensa en el contexto como el <b>espacio de trabajo</b> del que habla la actividad 03: guarda el estado y permite usar los recursos gráficos. El <b>framebuffer</b> es la “hoja invisible” donde se construye cada cuadro. GLFW solicita doble buffer por defecto: <b>uno frontal y otro trasero</b>. En este ejemplo se genera una única vista de la escena. El contenido inicial de color es indefinido. Consultamos el tamaño real del framebuffer en píxeles y registramos el callback de tamaño.",
+    "k": [
+      [
+        "Contexto",
+        "Espacio de trabajo de OpenGL, asociado aquí a la ventana."
+      ],
+      [
+        "Framebuffer",
+        "Conjunto de buffers donde se construye la imagen; puede incluir color, profundidad y stencil."
+      ],
+      [
+        "Doble buffer",
+        "El frontal (delantero) corresponde a la imagen presentada; el trasero permite construir la siguiente."
+      ],
+      [
+        "Callback",
+        "Función que GLFW llama cuando cambia el tamaño del framebuffer."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram"
+    ],
+    "flow": "c2r",
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: indefinido"
+    ],
+    "stage": -1,
+    "visual": [
+      0,
+      0,
+      0
+    ],
+    "activity": "03"
+  },
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Activar el contexto y cargar las funciones con GLAD",
+    "code": "glfwMakeContextCurrent(mainWindow);\nif (!gladLoadGLLoader(\n    (GLADloadproc)glfwGetProcAddress)) {\n    // Destruir ventana, terminar GLFW y salir\n}",
+    "ex": "<code>glfwMakeContextCurrent</code> hace que el contexto de <code>mainWindow</code> sea el <b>contexto actual</b>: las llamadas OpenGL de este flujo de instrucciones trabajarán con él. Luego <b>GLAD</b> carga las funciones modernas de OpenGL del driver usando <code>glfwGetProcAddress</code>. Esta es la conexión que explica la actividad 02: GLFW crea el contexto y GLAD permite acceder a las funciones del driver durante la ejecución.",
+    "k": [
+      [
+        "Contexto actual",
+        "El contexto activo para las llamadas OpenGL de este hilo; piensa en el hilo como un flujo de instrucciones."
+      ],
+      [
+        "GLAD",
+        "Cargador de funciones de OpenGL. Este ejemplo usa GLAD 1, generado para 4.6 Core."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram"
+    ],
+    "flow": "c2r",
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Punteros a funciones GL"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: indefinido"
+    ],
+    "stage": -1,
+    "visual": [
+      0,
+      0,
+      0
+    ],
+    "activity": "02 · 03"
+  },
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Activar la sincronización vertical (VSync)",
+    "code": "glfwSwapInterval(1);",
+    "ex": "<code>glfwSwapInterval(1)</code> solicita <b>sincronización vertical (VSync)</b>: relaciona la presentación de los cuadros con el refresco del monitor. Esto ayuda a evitar el <b>tearing</b>, cuando se ven partes de cuadros diferentes durante un refresco. Si el monitor trabaja a 60 Hz, cada refresco dura unos 16,67 ms. La velocidad del ciclo principal también depende del trabajo del programa y del driver; no está fijada siempre en 60 cuadros por segundo.",
+    "k": [
+      [
+        "VSync",
+        "Sincronización de la presentación con el refresco del monitor."
+      ],
+      [
+        "Tearing",
+        "Corte visible al mostrar partes de cuadros diferentes."
+      ]
+    ],
+    "act": [
+      "cpu"
+    ],
+    "flow": null,
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: indefinido"
+    ],
+    "stage": -1,
+    "visual": [
+      0,
+      0,
+      0
+    ],
+    "activity": "03"
+  },
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Crear, compilar y enlazar el shader program",
+    "code": "glShaderSource(vs, 1, &vertexShaderSrc, nullptr);\nglCompileShader(vs);\nglGetShaderiv(vs, GL_COMPILE_STATUS, &success);\n// Compilar también fs y verificar ambos\nglLinkProgram(prog);\nglGetProgramiv(prog, GL_LINK_STATUS, &success);\nglDeleteShader(vs);\nglDeleteShader(fs);",
+    "ex": "<code>buildShaderProgram()</code> prepara los pequeños programas que se ejecutarán en la GPU: el <b>vertex shader</b> y el <b>fragment shader</b>. Primero crea y compila cada objeto shader. Después crea un <b>objeto programa (shader program)</b>, le asocia los shaders y lo enlaza. Se revisan los errores de compilación y enlace. Prepararlos no dibuja el triángulo: más adelante activamos el programa con <code>glUseProgram</code> y damos la orden de dibujo con <code>glDrawArrays</code>.",
+    "k": [
+      [
+        "Shader",
+        "Programa escrito en GLSL para una etapa programable del pipeline."
+      ],
+      [
+        "Shader program",
+        "Objeto programa que reúne las etapas enlazadas; su ID se guarda en shaderProg."
+      ],
+      [
+        "Compilar / enlazar",
+        "Procesar el código de cada shader y combinar sus interfaces en un programa ejecutable."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram"
+    ],
+    "flow": "c2r",
+    "ram": [
+      "Programa C++ / driver",
+      "Fuentes GLSL",
+      "Shader program"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: indefinido"
+    ],
+    "stage": -1,
+    "visual": [
+      0,
+      0,
+      0
+    ],
+    "activity": "03 · 04"
+  },
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Definir los datos de los vértices",
+    "code": "float vertices[] = {\n    -0.5f, -0.5f, 0.0f, // A\n     0.5f, -0.5f, 0.0f, // B\n     0.0f,  0.5f, 0.0f  // C\n};",
+    "ex": "Dentro de <code>setupTriangle()</code> definimos tres <b>vértices</b>. Cada vértice tiene un atributo: su <b>posición</b>, formada por x, y y z. En este caso hay nueve valores <code>float</code>, que ocupan 36 bytes en la plataforma usada. El arreglo está en memoria del programa; luego cargaremos sus datos en el <b>buffer de vértices (VBO)</b>. Como el vertex shader usará w=1 y no aplicará matrices, estos valores coincidirán numéricamente con las NDC obtenidas después.",
+    "k": [
+      [
+        "Atributo de vértice",
+        "Propiedad de un vértice, como posición, color o coordenadas de textura. Aquí solo usamos posición."
+      ],
+      [
+        "NDC",
+        "Coordenadas de dispositivo normalizadas. El rango visible de este caso va de −1 a 1."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram"
+    ],
+    "flow": "c2r",
+    "ram": [
+      "Programa C++ / driver",
+      "vertices[9]: 36 bytes",
+      "Shader program"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: indefinido"
+    ],
+    "stage": -1,
+    "visual": [
+      0,
+      0,
+      0
+    ],
+    "activity": "04"
+  },
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Crear los IDs y hacer binding del VAO y el VBO",
+    "code": "glGenVertexArrays(1, &VAO);\nglGenBuffers(1, &VBO);\nglBindVertexArray(VAO);\nglBindBuffer(GL_ARRAY_BUFFER, VBO);",
+    "ex": "OpenGL identifica sus objetos mediante <b>IDs</b>, que guardamos en <code>VAO</code> y <code>VBO</code>. El <b>VBO</b> contendrá los datos de los vértices; el <b>VAO</b> guardará la configuración para leer sus atributos. Luego hacemos <b>binding</b>: seleccionamos el VAO y asociamos el VBO al destino <code>GL_ARRAY_BUFFER</code>. Así las próximas operaciones de configuración usarán los objetos correspondientes. Todavía no hemos cargado los datos del arreglo en el VBO.",
+    "k": [
+      [
+        "Objeto OpenGL",
+        "Recurso o configuración que se referencia mediante un ID."
+      ],
+      [
+        "VBO",
+        "Vertex Buffer Object: buffer que contiene los datos de los vértices."
+      ],
+      [
+        "VAO",
+        "Vertex Array Object: conserva la configuración de los atributos y sus fuentes."
+      ],
+      [
+        "Binding",
+        "Seleccionar o asociar un objeto para las operaciones que usan ese enlace."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram"
+    ],
+    "flow": "c2r",
+    "ram": [
+      "Programa C++ / driver",
+      "vertices[9]: 36 bytes",
+      "VAO / VBO: IDs",
+      "VAO: estado inicial"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: indefinido"
+    ],
+    "stage": -1,
+    "visual": [
+      0,
+      0,
+      0
+    ],
+    "activity": "04"
+  },
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Cargar los datos en el buffer de vértices (VBO)",
+    "code": "glBufferData(GL_ARRAY_BUFFER,\n    sizeof(vertices), vertices, GL_STATIC_DRAW);",
+    "ex": "<code>glBufferData</code> crea el espacio de almacenamiento del <b>VBO</b> y lo inicializa con los datos de <code>vertices</code>. Le damos el tamaño en bytes y la dirección del primer elemento del arreglo. Elegimos <code>GL_STATIC_DRAW</code> porque en este ejemplo los datos no cambian y los usaremos muchas veces para dibujar. Es una pista para el driver sobre el uso esperado. La animación muestra el envío de datos a la memoria gráfica como una transferencia lógica.",
+    "k": [
+      [
+        "glBufferData",
+        "Crea e inicializa el almacenamiento del buffer seleccionado."
+      ],
+      [
+        "GL_STATIC_DRAW",
+        "Pista de uso: pocas modificaciones y muchos usos para dibujar."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram",
+      "vram"
+    ],
+    "flow": "r2v",
+    "ram": [
+      "Programa C++ / driver",
+      "vertices[9]: 36 bytes",
+      "VAO / VBO: IDs"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: indefinido",
+      "VBO: 36 bytes"
+    ],
+    "stage": -1,
+    "visual": [
+      0,
+      0,
+      0
+    ],
+    "activity": "04"
+  },
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Configurar los atributos y hacer unbinding del VAO",
+    "code": "glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,\n    3 * sizeof(float), (void*)0 /* offset dentro del VBO */);\nglEnableVertexAttribArray(0);\nglBindVertexArray(0);\n// setupTriangle retorna: vertices deja de existir",
+    "ex": "<code>glVertexAttribPointer</code> le dice a OpenGL <b>cómo leer la posición de cada vértice</b>: atributo 0, tres componentes <code>GL_FLOAT</code>, un paso de 12 bytes entre vértices y un desplazamiento inicial de 0 bytes dentro del VBO. La configuración y la asociación con ese VBO quedan en el <b>VAO</b>. Después habilitamos el atributo 0 y hacemos <b>unbinding</b> del VAO. Al terminar <code>setupTriangle()</code>, el arreglo local deja de existir; los datos cargados en el VBO permanecen.",
+    "k": [
+      [
+        "Stride",
+        "Espaciado en bytes entre vértices consecutivos; aquí 3 × sizeof(float)."
+      ],
+      [
+        "Offset",
+        "Desplazamiento inicial dentro del VBO; aquí 0 bytes."
+      ],
+      [
+        "Habilitar / unbinding",
+        "Se habilita el atributo y se deja de seleccionar el VAO; su configuración se conserva."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram"
+    ],
+    "flow": "c2r",
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: indefinido",
+      "VBO: 36 bytes"
+    ],
+    "stage": -1,
+    "visual": [
+      0,
+      0,
+      0
+    ],
+    "activity": "04"
+  },
+  {
+    "g": "Preparación (una sola vez)",
+    "t": "Ajustar el viewport al framebuffer",
+    "code": "glViewport(0, 0, bufferWidth, bufferHeight);\n\n// Callback al cambiar el tamaño del framebuffer:\nvoid framebuffer_size_callback(\n    GLFWwindow*, int width, int height) {\n    glViewport(0, 0, width, height);\n}",
+    "ex": "El <b>viewport</b> define el área del framebuffer donde ubicamos lo que dibujamos. En este ejemplo comienza en (0,0) y ocupa todo el framebuffer. OpenGL usa este rectángulo para transformar las <b>NDC</b> en coordenadas de ventana. Si cambia el tamaño del framebuffer, el callback vuelve a ajustar el viewport. Recuerda la actividad 03: cambiar sus dimensiones o su posición cambia dónde y con qué tamaño aparece el triángulo.",
+    "k": [
+      [
+        "Framebuffer / viewport",
+        "El framebuffer es el destino de la imagen; el viewport es el rectángulo usado para ubicar la geometría en él."
+      ],
+      [
+        "Origen",
+        "En este ejemplo OpenGL mide desde abajo a la izquierda; el dibujo HTML invierte Y para mostrarlo."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram"
+    ],
+    "flow": "c2r",
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: indefinido",
+      "VBO: 36 bytes"
+    ],
+    "stage": -1,
+    "visual": [
+      0,
+      0,
+      0
+    ],
+    "activity": "03"
+  },
+  {
+    "g": "Cada cuadro (game loop)",
+    "t": "Ciclo principal (game loop): eventos y teclado",
+    "code": "while (!glfwWindowShouldClose(mainWindow)) {\n    glfwPollEvents();\n    processInput(mainWindow); // ESC marca cierre\n    // Continúa con limpiar, dibujar y presentar",
+    "ex": "Entramos al <b>ciclo principal (game loop)</b>. En cada vuelta procesamos los eventos de la ventana con <code>glfwPollEvents</code> y revisamos el teclado con <code>processInput</code>. Luego limpiamos, dibujamos y mostramos un nuevo <b>cuadro (frame)</b>. Si presionas ESC, se marca la solicitud de cierre; este código termina la vuelta actual y consulta esa marca al comenzar la siguiente. El recorrido muestra el primer cuadro; después se repite el ciclo.",
+    "k": [
+      [
+        "Game loop",
+        "Ciclo principal que organiza entrada, lógica y dibujo mientras no se solicite el cierre."
+      ],
+      [
+        "Cuadro (frame)",
+        "Imagen que construimos en una vuelta del ciclo principal."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram"
+    ],
+    "flow": "c2r",
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: indefinido",
+      "VBO: 36 bytes"
+    ],
+    "stage": -1,
+    "visual": [
+      0,
+      0,
+      0
+    ],
+    "activity": "03"
+  },
+  {
+    "g": "Cada cuadro (game loop)",
+    "t": "Establecer el color de fondo y limpiar",
+    "code": "glClearColor(0.2f, 0.3f, 0.3f, 1.0f);\nglClear(GL_COLOR_BUFFER_BIT);",
+    "ex": "<code>glClearColor</code> establece el color con el que limpiaremos: rojo 0.2, verde 0.3, azul 0.3 y alfa 1.0. Después <code>glClear(GL_COLOR_BUFFER_BIT)</code> limpia el <b>buffer de color trasero</b> con ese valor, preparando la “hoja invisible” para dibujar el nuevo cuadro. Esta máscara limpia color; no limpia profundidad ni stencil. Todavía no cambia la imagen presentada en pantalla.",
+    "k": [
+      [
+        "RGBA",
+        "Componentes rojo, verde, azul y alfa del color."
+      ],
+      [
+        "glClearColor / glClear",
+        "La primera llamada elige el valor de limpieza; la segunda realiza la limpieza."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "gpu",
+      "vram"
+    ],
+    "flow": "c2g",
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: fondo",
+      "VBO: 36 bytes"
+    ],
+    "stage": -1,
+    "visual": [
+      1,
+      0,
+      0
+    ],
+    "activity": "03"
+  },
+  {
+    "g": "Cada cuadro (game loop)",
+    "t": "Activar el shader program y el VAO; dibujar",
+    "code": "glUseProgram(shaderProg);\nglBindVertexArray(VAO);\nglDrawArrays(GL_TRIANGLES, 0, 3);",
+    "ex": "<code>glUseProgram(shaderProg)</code> activa el <b>shader program</b>. <code>glBindVertexArray(VAO)</code> activa el <b>VAO</b> con la configuración de los atributos. Finalmente, <code>glDrawArrays(GL_TRIANGLES, 0, 3)</code> da la <b>orden de dibujo (draw call)</b>: usa tres vértices, desde el índice 0, para formar un triángulo. Con esta llamada se pone en marcha el <b>pipeline de OpenGL</b>. Los siguientes pasos muestran lo que ocurre dentro de esa misma orden de dibujo.",
+    "k": [
+      [
+        "Shader program / VAO",
+        "El programa define cómo procesar los datos; el VAO define cómo obtener los atributos de entrada."
+      ],
+      [
+        "Draw call",
+        "Orden de dibujo que utiliza los datos y el estado seleccionados."
+      ],
+      [
+        "Pipeline",
+        "Secuencia de etapas que convierte los datos gráficos en una imagen."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "gpu"
+    ],
+    "flow": "c2g",
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: fondo",
+      "VBO: 36 bytes"
+    ],
+    "stage": -1,
+    "visual": [
+      1,
+      0,
+      0
+    ],
+    "activity": "03 · 04"
+  },
+  {
+    "g": "Cada cuadro (game loop)",
+    "t": "Etapa 1 · Shader de vértices (vertex shader)",
+    "code": "#version 460 core\nlayout(location = 0) in vec3 aPos;\nvoid main() {\n    gl_Position = vec4(aPos, 1.0);\n}",
+    "ex": "El <b>vertex shader</b> recibe la posición de cada vértice en <code>aPos</code>. <code>layout(location=0)</code> conecta esta entrada con el atributo 0 configurado en el VAO. El shader construye un <code>vec4</code> con x, y, z y w=1, y lo asigna a <code>gl_Position</code>. Como explica la actividad 04, esta variable predefinida representa la posición en el <b>espacio de clip (clip space)</b>. Todavía no estamos escribiendo píxeles en el framebuffer.",
+    "k": [
+      [
+        "aPos",
+        "Entrada elegida por el programador para recibir la posición del vértice."
+      ],
+      [
+        "gl_Position",
+        "Variable predefinida que contiene la posición en el espacio de clip."
+      ],
+      [
+        "vec4 / w",
+        "Cuatro componentes de coordenadas homogéneas; aquí w vale 1."
+      ]
+    ],
+    "act": [
+      "gpu",
+      "vram"
+    ],
+    "flow": "v2g",
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: fondo",
+      "VBO: 36 bytes"
+    ],
+    "stage": 0,
+    "visual": [
+      2,
+      0,
+      1
+    ],
+    "activity": "04"
+  },
+  {
+    "g": "Cada cuadro (game loop)",
+    "t": "Etapa 2 · Formar el triángulo y ubicarlo",
+    "code": "// Etapas fijas de esta orden de dibujo:\nA, B, C → triángulo\nrecorte homogéneo: -w ≤ x,y,z ≤ w\nNDC = (x/w, y/w, z/w)\nxw = (xNDC + 1) * width / 2\nyw = (yNDC + 1) * height / 2",
+    "ex": "OpenGL agrupa los tres vértices para formar una <b>primitiva</b>: el triángulo. Luego hace el <b>recorte (clipping)</b> contra el volumen visible, divide x, y y z por w para obtener las <b>NDC</b> y aplica el <b>viewport</b>. Como aquí w=1 y todo está dentro, los valores no cambian al dividir. Con un framebuffer de 400×400, A=(100,100), B=(300,100) y C=(200,300), medidos desde abajo a la izquierda. Seguimos trabajando con geometría.",
+    "k": [
+      [
+        "Primitiva",
+        "Forma básica que OpenGL dibuja: por ejemplo, un triángulo, una línea o un punto."
+      ],
+      [
+        "Clip → NDC → ventana",
+        "Recortar, dividir por w y transformar usando el viewport."
+      ],
+      [
+        "Vista HTML",
+        "La ilustración usa el origen superior izquierdo; por eso invierte el eje Y."
+      ]
+    ],
+    "act": [
+      "gpu"
+    ],
+    "flow": null,
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: fondo",
+      "VBO: 36 bytes"
+    ],
+    "stage": 1,
+    "visual": [
+      3,
+      0,
+      1
+    ],
+    "activity": "03 · 04"
+  },
+  {
+    "g": "Cada cuadro (game loop)",
+    "t": "Etapa 3 · Rasterización: generar fragmentos",
+    "code": "// Ejemplo sin multisampling solicitado:\n// Evaluar cobertura de muestras del triángulo\n// Generar fragmentos e interpolar entradas",
+    "ex": "La <b>rasterización</b> determina qué posiciones de la rejilla cubre el triángulo y genera <b>fragmentos</b> con información para procesarlas. Como pregunta la actividad 04, <b>un fragmento no es lo mismo que un píxel final</b>: todavía falta calcular sus salidas y decidir qué se escribe. La rejilla 20×20 está ampliada para que veas la cobertura; el framebuffer del ejemplo es de 400×400. Aquí no interpolamos colores de vértice porque solo enviamos posiciones.",
+    "k": [
+      [
+        "Rasterización",
+        "Convertir la geometría en fragmentos y determinar su cobertura."
+      ],
+      [
+        "Fragmento / píxel",
+        "El fragmento aporta información de una primitiva; el píxel final pertenece a la imagen almacenada."
+      ]
+    ],
+    "act": [
+      "gpu"
+    ],
+    "flow": null,
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: fondo",
+      "VBO: 36 bytes"
+    ],
+    "stage": 2,
+    "visual": [
+      4,
+      0,
+      1
+    ],
+    "activity": "04"
+  },
+  {
+    "g": "Cada cuadro (game loop)",
+    "t": "Etapa 4 · Shader de fragmentos (fragment shader)",
+    "code": "#version 460 core\n// Corrección: ubicación explícita de la salida\nlayout(location = 0) out vec4 FragColor;\nvoid main() {\n    FragColor = vec4(1.0, 0.5, 0.2, 1.0);\n}",
+    "ex": "El <b>fragment shader</b> asigna el mismo color naranja a los fragmentos del triángulo: <code>vec4(1.0, 0.5, 0.2, 1.0)</code>. Sus componentes son rojo, verde, azul y alfa. <code>FragColor</code> es una <b>variable de salida declarada por el programador</b>. En la versión corregida fijamos <code>layout(location=0)</code> para indicar su salida de color. Este shader no necesita texturas ni iluminación: su trabajo en este caso es producir un color fijo.",
+    "k": [
+      [
+        "FragColor",
+        "Nombre de la variable de salida del shader; no es una variable predefinida de OpenGL."
+      ],
+      [
+        "Alfa = 1",
+        "Valor de alfa completamente opaco en la interpretación habitual del color; no activa blending por sí solo."
+      ],
+      [
+        "Iluminación",
+        "El color de este ejemplo es constante y no se calcula con luces."
+      ]
+    ],
+    "act": [
+      "gpu"
+    ],
+    "flow": null,
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: fondo",
+      "VBO: 36 bytes"
+    ],
+    "stage": 3,
+    "visual": [
+      5,
+      0,
+      1
+    ],
+    "activity": "04"
+  },
+  {
+    "g": "Cada cuadro (game loop)",
+    "t": "Etapa 5 · Escribir el color en el framebuffer",
+    "code": "// Estado inicial que este programa no cambia:\n// GL_DEPTH_TEST, GL_STENCIL_TEST: deshabilitados\n// GL_BLEND, GL_SCISSOR_TEST: deshabilitados\n// Escritura RGBA habilitada → GL_BACK",
+    "ex": "Los colores producidos se escriben en el <b>buffer de color trasero</b> del framebuffer. La actividad 04 introduce el <b>Z-buffer</b> y el <b>depth test</b> para resolver qué queda delante cuando se superponen objetos. En este triángulo no activamos el depth test, stencil ni la mezcla de colores (<b>blending</b>). Por eso no se descartan fragmentos por profundidad ni se mezclan transparencias. El cuadro ya está construido, pero aún falta mostrarlo.",
+    "k": [
+      [
+        "Z-buffer / depth test",
+        "Buffer de profundidad y prueba que compara profundidades; el programa no habilita esta prueba."
+      ],
+      [
+        "Blending",
+        "Mezcla el color nuevo con el que ya está en el destino; aquí está deshabilitada."
+      ],
+      [
+        "Buffer trasero",
+        "Contiene el cuadro que estamos preparando."
+      ]
+    ],
+    "act": [
+      "gpu",
+      "vram"
+    ],
+    "flow": "g2v",
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: indefinido",
+      "Trasero: fondo + ▲",
+      "VBO: 36 bytes"
+    ],
+    "stage": 4,
+    "visual": [
+      5,
+      0,
+      0
+    ],
+    "activity": "04"
+  },
+  {
+    "g": "Cada cuadro (game loop)",
+    "t": "Mostrar el cuadro: glfwSwapBuffers",
+    "code": "glfwSwapBuffers(mainWindow);\n} // Nueva iteración: eventos (paso 12)",
+    "ex": "<code>glfwSwapBuffers(mainWindow)</code> permite <b>mostrar el cuadro que acabamos de construir</b>. Como en la actividad 03, lo explicamos mediante el <b>doble buffering</b>: construimos la imagen en el buffer trasero y la presentamos mediante el frontal (delantero). Así podemos preparar otro cuadro mientras se muestra el anterior. La vista representa el resultado cuando se presenta. Después volvemos a procesar eventos, limpiar y dibujar en la siguiente vuelta del ciclo principal.",
+    "k": [
+      [
+        "Doble buffering",
+        "Separar la construcción del cuadro de su presentación mediante buffers de color frontal y trasero."
+      ],
+      [
+        "Pantalla",
+        "Lugar donde el usuario ve el resultado presentado; no es una etapa del draw call."
+      ]
+    ],
+    "act": [
+      "cpu"
+    ],
+    "flow": null,
+    "ram": [
+      "Programa C++ / driver",
+      "Estado del contexto",
+      "Shader program",
+      "VAO: atrib. 0 → VBO"
+    ],
+    "vram": [
+      "Framebuffer por defecto",
+      "Frontal: fondo + ▲",
+      "Trasero: no preservado",
+      "VBO: 36 bytes"
+    ],
+    "stage": 5,
+    "visual": [
+      7,
+      5,
+      0
+    ],
+    "activity": "03"
+  },
+  {
+    "g": "Cierre",
+    "t": "Liberar los recursos y cerrar el programa",
+    "code": "glDeleteVertexArrays(1, &VAO);\nglDeleteBuffers(1, &VBO);\nglDeleteProgram(shaderProg);\nglfwDestroyWindow(mainWindow);\nglfwTerminate();",
+    "ex": "Al salir del <b>ciclo principal</b>, liberamos los objetos que usamos: el <b>VAO</b>, el <b>VBO</b> y el <b>shader program</b>. Hacemos estas llamadas mientras el contexto OpenGL sigue activo. Después destruimos la ventana con <code>glfwDestroyWindow</code> y terminamos GLFW con <code>glfwTerminate</code>. Como señala la actividad 03, liberar los recursos que ya no necesitamos es una buena práctica, aunque este ejemplo termine inmediatamente.",
+    "k": [
+      [
+        "Limpieza",
+        "Eliminar los objetos OpenGL, destruir la ventana y terminar GLFW."
+      ]
+    ],
+    "act": [
+      "cpu",
+      "ram"
+    ],
+    "flow": "c2r",
+    "ram": [
+      "Recursos liberados",
+      "main retorna"
+    ],
+    "vram": [],
+    "stage": -1,
+    "visual": [
+      -1,
+      -1,
+      0
+    ],
+    "activity": "03"
+  }
+];
+const BX={cpu:[20,20,215,100,'CPU / driver','Ejecuta C++ y llamadas GL','--cpu'],ram:[20,150,215,170,'Memoria del programa','Datos + estado lógico del driver','--cpu'],gpu:[485,20,215,100,'GPU','Procesa vértices y fragmentos','--gpu'],vram:[485,150,215,170,'Memoria gráfica','VRAM o memoria compartida','--vr']};
+const FL={c2g:[235,70,485,70],c2r:[127,120,127,150],r2v:[235,225,485,225],v2g:[592,150,592,120],g2v:[592,120,592,150]};
+const PS=['Vertex shader','Geometría','Rasterización','Fragment shader','Framebuffer','Pantalla'],PP=[1,0,0,1,0,0];
+const PD=['Posición en espacio de clip','Recorte → NDC → viewport','Fragmentos y cobertura','Color de los fragmentos','Escribe el color','Muestra el cuadro'];
+const BD={'-1':'no existe',0:'contenido indefinido',1:'color de fondo',5:'fondo + triángulo rasterizado',7:'contenido no garantizado después del intercambio'};
+const SD={'-1':'sin ventana',0:'apariencia inicial no definida por este programa',5:'cuadro presentado (modelo didáctico)'};
+let i=0,prev=null,timer=null,dots=[];
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
+const nav=$('nav');let lastG='';
+S.forEach((s,n)=>{if(s.g!==lastG){const g=document.createElement('span');g.className='grp';g.textContent=s.g;nav.appendChild(g);lastG=s.g}
+const b=document.createElement('button');b.className='d';b.textContent=n+1;b.title=s.t;b.setAttribute('aria-label','Paso '+(n+1)+': '+s.t);b.onclick=()=>go(n);nav.appendChild(b)});
+$('pipe').innerHTML=PS.map((p,n)=>`<div class="${PP[n]?'prog':''}"><b>${p}</b>${PD[n]}</div>`).join('');
+const cv=$('cv'),cx0=cv.getContext('2d'),cx2=$('cv2').getContext('2d'),N=20,C=11,T=[[55,165],[165,165],[110,55]];let cx=cx0;
+const inside=(x,y)=>{const[a,b,c]=T,s=(p,q,r)=>(p[0]-r[0])*(q[1]-r[1])-(q[0]-r[0])*(p[1]-r[1]),d=[s([x,y],a,b),s([x,y],b,c),s([x,y],c,a)];return !(d.some(v=>v<0)&&d.some(v=>v>0))};
+function tri(fill){cx.beginPath();cx.moveTo(...T[0]);cx.lineTo(...T[1]);cx.lineTo(...T[2]);cx.closePath();if(fill){cx.fillStyle='#ff8033';cx.fill()}else{cx.strokeStyle='#ff8033';cx.lineWidth=2;cx.stroke()}}
+function draw(v,c,lab,tmp){cx=c;const bg=v>=1&&v!==7&&!tmp;cx.fillStyle=bg?'#334d4d':tmp?'#10202c':'#1a1a1a';cx.fillRect(0,0,220,220);
+if(v===7){cx.strokeStyle='#555';cx.lineWidth=1;for(let k=-220;k<220;k+=14){cx.beginPath();cx.moveTo(k,220);cx.lineTo(k+220,0);cx.stroke()}}
+if(v<=0||v===7){cx.fillStyle='#bbb';cx.font='17px sans-serif';cx.textAlign='center';cx.fillText(v===-1?'No existe':v===7?'No preservado':lab,110,112)}
+cx.textAlign='left';
+if(v===2){cx.fillStyle='#ff8033';[['A: (-.5,-.5)',0],['B: (.5,-.5)',1],['C: (0,.5)',2]].forEach(([l,k])=>{cx.beginPath();cx.arc(T[k][0],T[k][1],5,0,7);cx.fill();cx.font='11px monospace';cx.textAlign=k===0?'left':k===1?'right':'center';cx.fillText(l,k===0?5:k===1?215:110,T[k][1]+(k<2?18:-10))})}
+if(v===3){tri(0);cx.fillStyle='#ff8033';T.forEach(p=>{cx.beginPath();cx.arc(p[0],p[1],4,0,7);cx.fill()})}
+if(v===4||v===5){for(let y=0;y<N;y++)for(let x=0;x<N;x++){const on=inside(x*C+C/2,y*C+C/2);if(v===4){cx.strokeStyle='rgba(255,255,255,.13)';cx.strokeRect(x*C+.5,y*C+.5,C-1,C-1);if(on){cx.fillStyle='rgba(255,255,255,.45)';cx.fillRect(x*C+1,y*C+1,C-2,C-2)}}else if(on){cx.fillStyle='#ff8033';cx.fillRect(x*C,y*C,C,C)}}}
+if(v===6){tri(1)}}
+function render(){const s=S[i];$('tag').textContent=s.g+' · paso '+(i+1)+' de '+S.length;$('tt').textContent=s.t;
+$('ex').innerHTML=`<p>${s.ex}</p>`;$('cd').textContent=s.code;
+$('kk').innerHTML=s.k.map(([a,b])=>`<div><b>${a}:</b> ${b}</div>`).join('');
+$('ct').textContent='Teclas ← →';$('lesson').textContent='Unidad 7 · Actividad '+s.activity;
+[...nav.querySelectorAll('.d')].forEach((b,n)=>{b.classList.toggle('on',n===i);b.classList.toggle('done',n<i);b.setAttribute('aria-current',n===i?'step':'false')});
+let h='';for(const k in BX){const[x,y,w,ht,l,sb,c]=BX[k],a=s.act.includes(k),items=k==='ram'?s.ram:k==='vram'?s.vram:[],po=prev?(k==='ram'?prev.ram:prev.vram):[];
+h+=`<rect class="box${a?' act':''}" x="${x}" y="${y}" width="${w}" height="${ht}" rx="8" style="stroke:${a?`var(${c})`:''}"/><text class="lbl" x="${x+10}" y="${y+22}">${l}</text><text class="sub" x="${x+10}" y="${y+37}">${sb}</text>`;
+items.forEach((t,j)=>{h+=`<text class="chip${po.includes(t)?'':' new'}" x="${x+8}" y="${y+58+j*17}">${t}</text>`})}
+if(s.flow){}
+$('boxes').innerHTML=h;
+document.querySelectorAll('#pipe div').forEach((d,n)=>d.classList.toggle('on',n===s.stage));
+const[bv,sv,tp]=s.visual;draw(bv,cx0,'Indefinido',tp);draw(sv,cx2,'Indefinido',0);
+cv.classList.toggle('tmp',!!tp);
+const pipeLabels={2:'Posiciones en espacio de clip (w=1)',3:'Triángulo ubicado por el viewport',4:'Cobertura esquemática',5:'Color de los fragmentos'};
+$('c1').innerHTML=tp?'<b>Interior del pipeline</b><br>'+pipeLabels[bv]:'<b>Buffer trasero</b><br>Aquí construimos el cuadro';
+$('c2').innerHTML='<b>Pantalla</b><br>Lo que ve el usuario (modelo)';
+cv.setAttribute('aria-label',tp?pipeLabels[bv]:BD[bv]);
+$('cv2').setAttribute('aria-label',SD[sv]);
+const back=tp?'color de fondo; los símbolos de la izquierda son datos del pipeline':BD[bv];
+$('how').innerHTML=`<b>Trasero:</b> ${back}.<br><br><b>Pantalla:</b> ${SD[sv]}.<br><br>${s.stage===5?'La presentación no es una etapa del draw call.':s.stage>=0?'<b>Etapa lógica:</b> '+PS[s.stage]+'.':'El draw call se emite en el paso 14.'}`;
+
+const pk=$('pk');pk.innerHTML='';dots=[];
+if(s.flow){const f=FL[s.flow];for(let k=0;k<4;k++){const c=document.createElementNS(NS,'circle');c.setAttribute('r',6);c.setAttribute('fill',s.flow==='r2v'?'var(--or)':'var(--gpu)');pk.appendChild(c);dots.push(c)}}
+prev=s;$('pv').disabled=i===0;$('nx').disabled=i===S.length-1}
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+function tick(t){const s=S[i];if(s.flow){const f=FL[s.flow];dots.forEach((c,k)=>{const u=RM ? .5 :((t/1400+k/4)%1);c.setAttribute('cx',f[0]+(f[2]-f[0])*u);c.setAttribute('cy',f[1]+(f[3]-f[1])*u)})}requestAnimationFrame(tick)}
+function go(n){i=Math.max(0,Math.min(S.length-1,n));render()}
+$('nx').onclick=()=>go(i+1);$('pv').onclick=()=>go(i-1);
+$('pl').onclick=()=>{if(timer){clearInterval(timer);timer=null;$('pl').textContent='▶ Auto'}else{$('pl').textContent='❚❚ Pausa';timer=setInterval(()=>{if(i>=S.length-1){clearInterval(timer);timer=null;$('pl').textContent='▶ Auto'}else go(i+1)},6500)}};
+addEventListener('keydown',e=>{if(e.key==='ArrowRight'){e.preventDefault();go(i+1)}if(e.key==='ArrowLeft'){e.preventDefault();go(i-1)}});
+render();requestAnimationFrame(tick);
+</script></body></html>
