@@ -51,6 +51,10 @@ button:focus-visible{outline:3px solid var(--cpu);outline-offset:2px}
 .ctl span{margin-left:auto;color:var(--mu);font-size:.8rem}
 footer{max-width:1200px;margin:12px auto 30px;padding:0 20px;color:var(--mu);font-size:.9rem}details{padding:10px 0}summary{cursor:pointer;color:var(--tx)}a{color:var(--cpu)}.scope{font-size:.86rem}.ctl{flex-wrap:wrap}button:disabled{opacity:.45;cursor:default}
 .lesson{margin:5px 0;color:var(--mu);font-size:.82rem}
+.vertex-input{margin:12px 0;padding:12px;border:1px solid var(--ln);border-radius:8px;background:var(--bg)}
+.vertex-input h3{margin:0 0 10px;font-size:.95rem}.vao-flow{display:grid;grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr) 16px minmax(0,1fr);gap:6px;align-items:stretch}
+.vao-node{padding:9px;border:1px solid var(--ln);border-radius:7px;min-width:0;font-size:.78rem}.vao-node b{display:block;color:var(--gpu);margin-bottom:5px}.vao-node p{margin:4px 0;overflow-wrap:anywhere}.vao-node.active{border-color:var(--or);box-shadow:0 0 0 1px var(--or) inset}.vao-node.pending{opacity:.65}.vao-arrow{align-self:center;color:var(--mu);text-align:center}.vao-arrow.active{color:var(--or)}.vertex-input .note{margin:10px 0 0;font-size:.76rem;color:var(--mu)}.vertex-input code{font-size:.76rem;overflow-wrap:anywhere}
+@media(max-width:620px){.vao-flow{grid-template-columns:1fr}.vao-arrow{transform:rotate(90deg)}.vao-node{font-size:.86rem}.vertex-input code,.vertex-input .note{font-size:.8rem}}
 </style></head><body>
 <header><h1>Cómo OpenGL dibuja un triángulo</h1>
 <p>Del código C++ a la pantalla: sigue el caso de estudio del triángulo paso a paso.</p><p class="scope">Caso: OpenGL 4.6 Core · GLAD · framebuffer de ejemplo 400×400. Cada cuadro (frame) se construye en el ciclo principal (game loop). La arquitectura, la rejilla 20×20 y las pausas entre etapas son esquemas didácticos; no representan tiempos ni distribución física exactos.</p></header>
@@ -64,6 +68,17 @@ footer{max-width:1200px;margin:12px auto 30px;padding:0 20px;color:var(--mu);fon
 <line x1="235" y1="70" x2="485" y2="70" stroke="var(--ln)" stroke-dasharray="4 4"/>
 <line x1="235" y1="225" x2="485" y2="225" stroke="var(--ln)" stroke-dasharray="4 4"/>
 <g id="pk"></g></svg>
+<section class="vertex-input" aria-label="Del VAO a la lectura del VBO">
+<h3>Configuración de entrada · modelo lógico</h3>
+<div class="vao-flow">
+<div class="vao-node" id="vaoState"><b>VAO · Estado de OpenGL</b><div id="vaoDetails"></div></div>
+<span class="vao-arrow" id="vaoToDriver" aria-hidden="true">→</span>
+<div class="vao-node" id="vaoDriver"><b>Driver · Prepara órdenes</b><p id="vaoDriverDetails"></p></div>
+<span class="vao-arrow" id="driverToGpu" aria-hidden="true">→</span>
+<div class="vao-node" id="gpuInput"><b>GPU · Entrada de vértices</b><p id="gpuInputDetails"></p></div>
+</div>
+<p class="note" id="vaoNote"></p>
+</section>
 <div id="pipe"></div>
 <div class="row"><figure><canvas id="cv" width="220" height="220" aria-label="Buffer trasero"></canvas><figcaption id="c1"></figcaption></figure><figure><canvas id="cv2" width="220" height="220" aria-label="Pantalla"></canvas><figcaption id="c2"></figcaption></figure>
 <div class="how" id="how"></div></div>
@@ -81,6 +96,7 @@ footer{max-width:1200px;margin:12px auto 30px;padding:0 20px;color:var(--mu);fon
 <li><a href="https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf">OpenGL 4.6 Core</a>: §§ 2.1–2.3, 5.1, 6.1–6.2, 9, 10.3, 13.6–13.8, 14, 15 y 17.</li>
 <li><a href="https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html">GLSL 4.60</a>: gl_Position, interfaces y calificadores de entrada/salida.</li>
 <li><a href="https://wikis.khronos.org/opengl/Vertex_Post-Processing">Khronos: posprocesamiento de vértices</a> y <a href="https://wikis.khronos.org/opengl/Vertex_Specification">especificación de atributos</a>.</li>
+<li><a href="https://docs.mesa3d.org/gallium/context.html#drawing">Mesa: buffers, formatos y lectura de atributos por el driver</a>.</li>
 <li><a href="https://www.glfw.org/docs/latest/context_guide.html">GLFW: contextos y carga de funciones</a>.</li>
 <li><a href="https://www.glfw.org/docs/latest/window_guide.html#buffer_swap">GLFW: framebuffer, doble buffer e intervalo de intercambio</a>.</li>
 </ul>
@@ -122,7 +138,8 @@ const S=[
       -1,
       0
     ],
-    "activity": "03"
+    "activity": "03",
+    "vao": "pending"
   },
   {
     "g": "Preparación (una sola vez)",
@@ -154,7 +171,8 @@ const S=[
       -1,
       0
     ],
-    "activity": "03"
+    "activity": "03",
+    "vao": "pending"
   },
   {
     "g": "Preparación (una sola vez)",
@@ -186,7 +204,7 @@ const S=[
     "flow": "c2r",
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto"
+      "Referencia al contexto"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -199,7 +217,8 @@ const S=[
       0,
       0
     ],
-    "activity": "03"
+    "activity": "03",
+    "vao": "pending"
   },
   {
     "g": "Preparación (una sola vez)",
@@ -223,7 +242,7 @@ const S=[
     "flow": "c2r",
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
+      "Referencia al contexto",
       "Punteros a funciones GL"
     ],
     "vram": [
@@ -237,7 +256,8 @@ const S=[
       0,
       0
     ],
-    "activity": "02 · 03"
+    "activity": "02 · 03",
+    "vao": "pending"
   },
   {
     "g": "Preparación (una sola vez)",
@@ -260,7 +280,7 @@ const S=[
     "flow": null,
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto"
+      "Referencia al contexto"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -273,7 +293,8 @@ const S=[
       0,
       0
     ],
-    "activity": "03"
+    "activity": "03",
+    "vao": "pending"
   },
   {
     "g": "Preparación (una sola vez)",
@@ -302,7 +323,7 @@ const S=[
     "ram": [
       "Programa C++ / driver",
       "Fuentes GLSL",
-      "Shader program"
+      "shaderProg: ID"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -315,7 +336,8 @@ const S=[
       0,
       0
     ],
-    "activity": "03 · 04"
+    "activity": "03 · 04",
+    "vao": "pending"
   },
   {
     "g": "Preparación (una sola vez)",
@@ -340,7 +362,7 @@ const S=[
     "ram": [
       "Programa C++ / driver",
       "vertices[9]: 36 bytes",
-      "Shader program"
+      "shaderProg: ID"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -353,13 +375,14 @@ const S=[
       0,
       0
     ],
-    "activity": "04"
+    "activity": "04",
+    "vao": "pending"
   },
   {
     "g": "Preparación (una sola vez)",
     "t": "Crear los IDs y hacer binding del VAO y el VBO",
     "code": "glGenVertexArrays(1, &VAO);\nglGenBuffers(1, &VBO);\nglBindVertexArray(VAO);\nglBindBuffer(GL_ARRAY_BUFFER, VBO);",
-    "ex": "OpenGL identifica sus objetos mediante <b>IDs</b>, que guardamos en <code>VAO</code> y <code>VBO</code>. El <b>VBO</b> contendrá los datos de los vértices; el <b>VAO</b> guardará la configuración para leer sus atributos. Luego hacemos <b>binding</b>: seleccionamos el VAO y asociamos el VBO al destino <code>GL_ARRAY_BUFFER</code>. Así las próximas operaciones de configuración usarán los objetos correspondientes. Todavía no hemos cargado los datos del arreglo en el VBO.",
+    "ex": "OpenGL identifica sus objetos mediante <b>IDs</b>, que guardamos en <code>VAO</code> y <code>VBO</code>. El <b>VBO</b> contendrá los datos de los vértices; el <b>VAO</b> guardará la configuración para leer sus atributos. Luego hacemos <b>binding</b>: seleccionamos el VAO y asociamos el VBO al destino <code>GL_ARRAY_BUFFER</code>. Así las próximas operaciones de configuración usarán los objetos correspondientes. Todavía no hemos cargado los datos del arreglo en el VBO. El identificador <code>GLuint VAO</code> está en la memoria del programa; identifica un objeto de estado gestionado por OpenGL. Su ubicación física no está fijada por la API.",
     "k": [
       [
         "Objeto OpenGL",
@@ -386,8 +409,7 @@ const S=[
     "ram": [
       "Programa C++ / driver",
       "vertices[9]: 36 bytes",
-      "VAO / VBO: IDs",
-      "VAO: estado inicial"
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -400,7 +422,8 @@ const S=[
       0,
       0
     ],
-    "activity": "04"
+    "activity": "04",
+    "vao": "created"
   },
   {
     "g": "Preparación (una sola vez)",
@@ -440,13 +463,14 @@ const S=[
       0,
       0
     ],
-    "activity": "04"
+    "activity": "04",
+    "vao": "created"
   },
   {
     "g": "Preparación (una sola vez)",
     "t": "Configurar los atributos y hacer unbinding del VAO",
     "code": "glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,\n    3 * sizeof(float), (void*)0 /* offset dentro del VBO */);\nglEnableVertexAttribArray(0);\nglBindVertexArray(0);\n// setupTriangle retorna: vertices deja de existir",
-    "ex": "<code>glVertexAttribPointer</code> le dice a OpenGL <b>cómo leer la posición de cada vértice</b>: atributo 0, tres componentes <code>GL_FLOAT</code>, un paso de 12 bytes entre vértices y un desplazamiento inicial de 0 bytes dentro del VBO. La configuración y la asociación con ese VBO quedan en el <b>VAO</b>. Después habilitamos el atributo 0 y hacemos <b>unbinding</b> del VAO. Al terminar <code>setupTriangle()</code>, el arreglo local deja de existir; los datos cargados en el VBO permanecen.",
+    "ex": "<code>glVertexAttribPointer</code> le dice a OpenGL <b>cómo leer la posición de cada vértice</b>: atributo 0, tres componentes <code>GL_FLOAT</code>, un paso de 12 bytes entre vértices y un desplazamiento inicial de 0 bytes dentro del VBO. La configuración y la asociación con ese VBO quedan en el <b>VAO</b>. Después habilitamos el atributo 0 y hacemos <b>unbinding</b> del VAO. Al terminar <code>setupTriangle()</code>, el arreglo local deja de existir; los datos cargados en el VBO permanecen. El panel de configuración muestra la referencia al VBO y las reglas de lectura guardadas en el VAO; estos valores no se copian al VBO.",
     "k": [
       [
         "Stride",
@@ -468,9 +492,9 @@ const S=[
     "flow": "c2r",
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -484,7 +508,8 @@ const S=[
       0,
       0
     ],
-    "activity": "04"
+    "activity": "04",
+    "vao": "configured"
   },
   {
     "g": "Preparación (una sola vez)",
@@ -508,9 +533,9 @@ const S=[
     "flow": "c2r",
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -524,7 +549,8 @@ const S=[
       0,
       0
     ],
-    "activity": "03"
+    "activity": "03",
+    "vao": "configured"
   },
   {
     "g": "Cada cuadro (game loop)",
@@ -548,9 +574,9 @@ const S=[
     "flow": "c2r",
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -564,7 +590,8 @@ const S=[
       0,
       0
     ],
-    "activity": "03"
+    "activity": "03",
+    "vao": "configured"
   },
   {
     "g": "Cada cuadro (game loop)",
@@ -589,9 +616,9 @@ const S=[
     "flow": "c2g",
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -605,13 +632,14 @@ const S=[
       0,
       0
     ],
-    "activity": "03"
+    "activity": "03",
+    "vao": "configured"
   },
   {
     "g": "Cada cuadro (game loop)",
     "t": "Activar el shader program y el VAO; dibujar",
     "code": "glUseProgram(shaderProg);\nglBindVertexArray(VAO);\nglDrawArrays(GL_TRIANGLES, 0, 3);",
-    "ex": "<code>glUseProgram(shaderProg)</code> activa el <b>shader program</b>. <code>glBindVertexArray(VAO)</code> activa el <b>VAO</b> con la configuración de los atributos. Finalmente, <code>glDrawArrays(GL_TRIANGLES, 0, 3)</code> da la <b>orden de dibujo (draw call)</b>: usa tres vértices, desde el índice 0, para formar un triángulo. Con esta llamada se pone en marcha el <b>pipeline de OpenGL</b>. Los siguientes pasos muestran lo que ocurre dentro de esa misma orden de dibujo.",
+    "ex": "<code>glUseProgram(shaderProg)</code> activa el <b>shader program</b>. <code>glBindVertexArray(VAO)</code> activa el <b>VAO</b> con la configuración de los atributos. Finalmente, <code>glDrawArrays(GL_TRIANGLES, 0, 3)</code> da la <b>orden de dibujo (draw call)</b>: usa tres vértices, desde el índice 0, para formar un triángulo. Con esta llamada se pone en marcha el <b>pipeline de OpenGL</b>. Los siguientes pasos muestran lo que ocurre dentro de esa misma orden de dibujo. El <b>driver</b> traduce el estado del VAO a órdenes y configuración de entrada para la GPU; puede reutilizar estado ya preparado. La GPU dispone así de la fuente y del formato necesarios para leer el VBO. Esto no implica copiar literalmente el objeto VAO a la VRAM.",
     "k": [
       [
         "Shader program / VAO",
@@ -624,6 +652,10 @@ const S=[
       [
         "Pipeline",
         "Secuencia de etapas que convierte los datos gráficos en una imagen."
+      ],
+      [
+        "Driver → GPU",
+        "Prepara la lectura de vértices a partir de la configuración del VAO."
       ]
     ],
     "act": [
@@ -633,9 +665,9 @@ const S=[
     "flow": "c2g",
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -649,13 +681,14 @@ const S=[
       0,
       0
     ],
-    "activity": "03 · 04"
+    "activity": "03 · 04",
+    "vao": "drawing"
   },
   {
     "g": "Cada cuadro (game loop)",
     "t": "Etapa 1 · Shader de vértices (vertex shader)",
     "code": "#version 460 core\nlayout(location = 0) in vec3 aPos;\nvoid main() {\n    gl_Position = vec4(aPos, 1.0);\n}",
-    "ex": "El <b>vertex shader</b> recibe la posición de cada vértice en <code>aPos</code>. <code>layout(location=0)</code> conecta esta entrada con el atributo 0 configurado en el VAO. El shader construye un <code>vec4</code> con x, y, z y w=1, y lo asigna a <code>gl_Position</code>. Como explica la actividad 04, esta variable predefinida representa la posición en el <b>espacio de clip (clip space)</b>. Todavía no estamos escribiendo píxeles en el framebuffer.",
+    "ex": "Antes de ejecutar el <b>vertex shader</b>, el mecanismo de entrada de vértices de la GPU usa la configuración preparada por el driver: lee tres floats por vértice desde el VBO, con stride de 12 bytes y offset de 0. Esos valores llegan al atributo 0, conectado con <code>aPos</code>. El <b>vertex shader</b> recibe la posición de cada vértice en <code>aPos</code>. <code>layout(location=0)</code> conecta esta entrada con el atributo 0 configurado en el VAO. El shader construye un <code>vec4</code> con x, y, z y w=1, y lo asigna a <code>gl_Position</code>. Como explica la actividad 04, esta variable predefinida representa la posición en el <b>espacio de clip (clip space)</b>. Todavía no estamos escribiendo píxeles en el framebuffer.",
     "k": [
       [
         "aPos",
@@ -677,9 +710,9 @@ const S=[
     "flow": "v2g",
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -693,7 +726,8 @@ const S=[
       0,
       1
     ],
-    "activity": "04"
+    "activity": "04",
+    "vao": "reading"
   },
   {
     "g": "Cada cuadro (game loop)",
@@ -720,9 +754,9 @@ const S=[
     "flow": null,
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -736,7 +770,8 @@ const S=[
       0,
       1
     ],
-    "activity": "03 · 04"
+    "activity": "03 · 04",
+    "vao": "drawing"
   },
   {
     "g": "Cada cuadro (game loop)",
@@ -759,9 +794,9 @@ const S=[
     "flow": null,
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -775,7 +810,8 @@ const S=[
       0,
       1
     ],
-    "activity": "04"
+    "activity": "04",
+    "vao": "drawing"
   },
   {
     "g": "Cada cuadro (game loop)",
@@ -802,9 +838,9 @@ const S=[
     "flow": null,
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -818,7 +854,8 @@ const S=[
       0,
       1
     ],
-    "activity": "04"
+    "activity": "04",
+    "vao": "drawing"
   },
   {
     "g": "Cada cuadro (game loop)",
@@ -846,9 +883,9 @@ const S=[
     "flow": "g2v",
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -862,7 +899,8 @@ const S=[
       0,
       0
     ],
-    "activity": "04"
+    "activity": "04",
+    "vao": "drawing"
   },
   {
     "g": "Cada cuadro (game loop)",
@@ -885,9 +923,9 @@ const S=[
     "flow": null,
     "ram": [
       "Programa C++ / driver",
-      "Estado del contexto",
-      "Shader program",
-      "VAO: atrib. 0 → VBO"
+      "Referencia al contexto",
+      "shaderProg: ID",
+      "VAO / VBO: IDs"
     ],
     "vram": [
       "Framebuffer por defecto",
@@ -901,7 +939,8 @@ const S=[
       5,
       0
     ],
-    "activity": "03"
+    "activity": "03",
+    "vao": "drawing"
   },
   {
     "g": "Cierre",
@@ -930,10 +969,11 @@ const S=[
       -1,
       0
     ],
-    "activity": "03"
+    "activity": "03",
+    "vao": "deleted"
   }
 ];
-const BX={cpu:[20,20,215,100,'CPU / driver','Ejecuta C++ y llamadas GL','--cpu'],ram:[20,150,215,170,'Memoria del programa','Datos + estado lógico del driver','--cpu'],gpu:[485,20,215,100,'GPU','Procesa vértices y fragmentos','--gpu'],vram:[485,150,215,170,'Memoria gráfica','VRAM o memoria compartida','--vr']};
+const BX={cpu:[20,20,215,100,'CPU / driver','Ejecuta C++ y llamadas GL','--cpu'],ram:[20,150,215,170,'Memoria del programa','Datos e identificadores C++','--cpu'],gpu:[485,20,215,100,'GPU','Procesa vértices y fragmentos','--gpu'],vram:[485,150,215,170,'Memoria gráfica','VRAM o memoria compartida','--vr']};
 const FL={c2g:[235,70,485,70],c2r:[127,120,127,150],r2v:[235,225,485,225],v2g:[592,150,592,120],g2v:[592,120,592,150]};
 const PS=['Vertex shader','Geometría','Rasterización','Fragment shader','Framebuffer','Pantalla'],PP=[1,0,0,1,0,0];
 const PD=['Posición en espacio de clip','Recorte → NDC → viewport','Fragmentos y cobertura','Color de los fragmentos','Escribe el color','Muestra el cuadro'];
@@ -964,8 +1004,8 @@ $('ct').textContent=`${i+1} / ${S.length}`;$('lesson').textContent='Unidad 7 · 
 let h='';for(const k in BX){const[x,y,w,ht,l,sb,c]=BX[k],a=s.act.includes(k),items=k==='ram'?s.ram:k==='vram'?s.vram:[],po=prev?(k==='ram'?prev.ram:prev.vram):[];
 h+=`<rect class="box${a?' act':''}" x="${x}" y="${y}" width="${w}" height="${ht}" rx="8" style="stroke:${a?`var(${c})`:''}"/><text class="lbl" x="${x+10}" y="${y+22}">${l}</text><text class="sub" x="${x+10}" y="${y+37}">${sb}</text>`;
 items.forEach((t,j)=>{h+=`<text class="chip${po.includes(t)?'':' new'}" x="${x+8}" y="${y+58+j*17}">${t}</text>`})}
-if(s.flow){}
 $('boxes').innerHTML=h;
+renderVertexInput(s);
 document.querySelectorAll('#pipe div').forEach((d,n)=>d.classList.toggle('on',n===s.stage));
 const[bv,sv,tp]=s.visual;draw(bv,cx0,'Indefinido',tp);draw(sv,cx2,'Indefinido',0);
 cv.classList.toggle('tmp',!!tp);
@@ -980,6 +1020,17 @@ $('how').innerHTML=`<b>Trasero:</b> ${back}.<br><br><b>Pantalla:</b> ${SD[sv]}.<
 const pk=$('pk');pk.innerHTML='';dots=[];
 if(s.flow){const f=FL[s.flow];for(let k=0;k<4;k++){const c=document.createElementNS(NS,'circle');c.setAttribute('r',6);c.setAttribute('fill',s.flow==='r2v'?'var(--or)':'var(--gpu)');pk.appendChild(c);dots.push(c)}}
 prev=s;$('pv').disabled=i===0;$('nx').disabled=i===S.length-1}
+function renderVertexInput(s){
+const configured=['configured','drawing','reading'].includes(s.vao),gpuReady=['drawing','reading'].includes(s.vao),created=s.vao==='created';
+$('vaoDetails').innerHTML=configured?'<p>Atributo 0 habilitado</p><p>Fuente: <strong>VBO</strong></p><p>3 × GL_FLOAT</p><p>Stride: 12 B · Offset: 0 B</p>':created?'<p>Objeto creado y seleccionado.</p><p>Atributo 0 deshabilitado.</p><p>Fuente aún sin configurar.</p>':s.vao==='deleted'?'<p>Objeto eliminado.</p>':'<p>Aún no se ha creado.</p>';
+$('vaoDriverDetails').textContent=gpuReady?'Usa el VAO seleccionado para preparar la fuente y el formato de entrada de la GPU.':configured?'Conserva la configuración. Se usará al emitir el draw call.':created?'Registra el objeto de estado; aún falta configurar sus atributos.':s.vao==='deleted'?'Libera los recursos del dibujo.':'Aún no hay configuración de vértices.';
+$('gpuInputDetails').innerHTML=gpuReady?'<code>inicio del VBO + n × 12 + 0</code><p>Lee 3 floats → atributo 0 → aPos.</p>':s.vao==='deleted'?'Recursos liberados.':'Aún no se ha preparado este dibujo.';
+$('vaoNote').textContent=gpuReady?'La GPU recibe una configuración utilizable para leer el VBO. La representación concreta depende del driver y del hardware; OpenGL no exige una copia literal del VAO en VRAM.':configured?'El VAO conserva la referencia al VBO y las reglas de lectura. El VBO conserva los bytes de los vértices.':created?'En RAM guardamos los IDs de C++. Aquí mostramos el objeto VAO como estado lógico, sin asignarle una ubicación física.':s.vao==='deleted'?'El VAO y el VBO se eliminan mientras el contexto sigue activo.':'Este panel seguirá el recorrido de la configuración desde OpenGL hasta la entrada de la GPU.';
+$('vaoState').classList.toggle('pending',!configured&&!created);$('gpuInput').classList.toggle('pending',!gpuReady);
+$('vaoState').classList.toggle('active',created||s.vao==='configured'&&s.t.startsWith('Configurar los atributos'));
+$('vaoDriver').classList.toggle('active',s.vao==='drawing'&&s.stage===-1&&s.flow==='c2g');$('gpuInput').classList.toggle('active',s.vao==='reading');
+for(const id of ['vaoToDriver','driverToGpu'])$(id).classList.toggle('active',gpuReady);
+}
 const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
 function tick(t){const s=S[i];if(s.flow){const f=FL[s.flow];dots.forEach((c,k)=>{const u=RM ? .5 :((t/1400+k/4)%1);c.setAttribute('cx',f[0]+(f[2]-f[0])*u);c.setAttribute('cy',f[1]+(f[3]-f[1])*u)})}requestAnimationFrame(tick)}
 function go(n){i=Math.max(0,Math.min(S.length-1,n));render()}
